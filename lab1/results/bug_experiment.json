@@ -1,0 +1,109 @@
+{
+  "loss_correct": 1.4562007801142816,
+  "loss_bug": 1.4562007801142816,
+  "ratios": [
+    {
+      "param": "W1",
+      "n_elements": 32,
+      "n_nonzero": 32,
+      "ratio_min": 104.99999999999828,
+      "ratio_max": 105.00000000000003,
+      "zeros_stay_zero": true
+    },
+    {
+      "param": "b1",
+      "n_elements": 8,
+      "n_nonzero": 8,
+      "ratio_min": 104.99999999999918,
+      "ratio_max": 105.00000000000003,
+      "zeros_stay_zero": true
+    },
+    {
+      "param": "W2",
+      "n_elements": 24,
+      "n_nonzero": 24,
+      "ratio_min": 104.99999999999991,
+      "ratio_max": 105.00000000000004,
+      "zeros_stay_zero": true
+    },
+    {
+      "param": "b2",
+      "n_elements": 3,
+      "n_nonzero": 3,
+      "ratio_min": 105.00000000000004,
+      "ratio_max": 105.00000000000009,
+      "zeros_stay_zero": true
+    }
+  ],
+  "torch_rows": [
+    {
+      "name": "Втрата",
+      "max_abs_diff": 2.220446049250313e-16,
+      "passed": true
+    },
+    {
+      "name": "Градієнт W1",
+      "shape": [
+        4,
+        8
+      ],
+      "max_abs_diff": 18.518137980759192,
+      "passed": false
+    },
+    {
+      "name": "Градієнт b1",
+      "shape": [
+        8
+      ],
+      "max_abs_diff": 15.641093948478263,
+      "passed": false
+    },
+    {
+      "name": "Градієнт W2",
+      "shape": [
+        8,
+        3
+      ],
+      "max_abs_diff": 34.193432939632565,
+      "passed": false
+    },
+    {
+      "name": "Градієнт b2",
+      "shape": [
+        3
+      ],
+      "max_abs_diff": 11.197086181821382,
+      "passed": false
+    }
+  ],
+  "numeric_rows": [
+    {
+      "name": "W1[0, 0]",
+      "grad_backward": -2.091619354708308,
+      "grad_numeric": -0.019920184390898044,
+      "abs_diff": 2.07169917031741,
+      "passed": false
+    },
+    {
+      "name": "b1[0]",
+      "grad_backward": -7.409441716359898,
+      "grad_numeric": -0.0705661116207068,
+      "abs_diff": 7.338875604739191,
+      "passed": false
+    },
+    {
+      "name": "W2[0, 0]",
+      "grad_backward": 14.19917190357499,
+      "grad_numeric": 0.13523020869765645,
+      "abs_diff": 14.063941694877334,
+      "passed": false
+    },
+    {
+      "name": "b2[0]",
+      "grad_backward": 8.979772708405362,
+      "grad_numeric": 0.08552164498798476,
+      "abs_diff": 8.894251063417377,
+      "passed": false
+    }
+  ]
+}
