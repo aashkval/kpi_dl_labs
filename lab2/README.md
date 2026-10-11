@@ -15,11 +15,14 @@
 cd lab2
 
 # 1) навчання з локального CSV (один раз; тека --out має бути порожньою або не існувати)
-uv run python lab2_starter.py --data /шлях/до/creditcard.csv --out retrain
+#    файл треба самостійно покласти в lab2/data/ або передати в --data власний шлях
+uv run python lab2_starter.py --data data/creditcard.csv --out retrain
 
 # 2) аналіз порогів (пп. 2–4) зі збережених прогнозів, без CSV і без навчання
 uv run python analysis.py --saved results --out analysis
 ```
+
+Необов'язково: покрокова демонстрація в Jupyter — `uv run --group notebook jupyter lab lab2.ipynb` (ноутбук збережено з виводом; перевиконати без відкриття: `uv run --group notebook jupyter nbconvert --to notebook --execute --inplace lab2.ipynb`). Група `notebook` (jupyterlab, ipykernel, nbconvert, точні версії) окрема: звичайний `uv sync` її не встановлює.
 
 `results/` — збережені ваги й прогнози, на яких побудовано цей звіт. `retrain/` — тека для повторного навчання на машині викладача (у `.gitignore`): стартовий код навмисно відмовляється писати в непорожню теку, тому команда не пише в `results/`. Щоб перевірити відтворення поділу й стандартизації, порівняйте `retrain/split_summary.csv` і `retrain/preprocessing.npz` з відповідними файлами в `results/`. У `results/run.json` поле `source_csv` замінено на `creditcard.csv`, щоб не публікувати локальний шлях; аналіз це поле не читає. Друга команда відтворює всі числа, таблиці й рисунки цього README (таблиці — у `analysis/report.md`).
 
@@ -42,6 +45,7 @@ uv run python analysis.py --saved results --out analysis
 | `thresholds.py` | власний підрахунок TP/FP/FN/TN і `C`; пошук порога через сортування та кумулятивні суми |
 | `verification.py` | набори A/B/C і незалежний прямий перебір (чистий Python, не імпортує `thresholds.py`) |
 | `analysis.py` | команда аналізу: validation → перевірка A/B/C → test |
+| `lab2.ipynb` | покрокова демонстрація (імпортує ті самі модулі, логіку не дублює); збережено з виводом |
 | `results/` | `model.pt` (ваги), `predictions.npz` (індекси поділу, мітки, Amount, оцінки без округлення), `preprocessing.npz` (статистики scaler), `run.json`, `split_summary.csv` |
 | `analysis/candidates_validation.csv` | повна таблиця кандидатів: `threshold, TP, FP, FN, TN, C` |
 | `analysis/threshold.json` | зафіксований поріг `t*` |

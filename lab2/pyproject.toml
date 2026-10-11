@@ -10,3 +10,10 @@ dependencies = [
     "scikit-learn==1.9.1",
     "torch==2.14.1",
 ]
+
+[dependency-groups]
+notebook = [
+    "ipykernel==7.4.0",
+    "jupyterlab==4.6.4",
+    "nbconvert==7.17.1",
+]

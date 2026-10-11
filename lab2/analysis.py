@@ -4,6 +4,7 @@
 
 Порядок кроків фіксований: поріг t* обирається на validation, далі реалізація
 пошуку перевіряється на наборах A/B/C, і лише після цього читаються масиви test.
+Кроки винесено в окремі функції, щоб їх міг викликати й ноутбук lab2.ipynb.
 """
 
 from __future__ import annotations
@@ -14,11 +15,10 @@ import math
 from pathlib import Path
 
 import matplotlib
-
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.figure import Figure
 from sklearn.metrics import precision_recall_curve, roc_auc_score, roc_curve
 
 import verification
@@ -71,13 +71,58 @@ def write_json(path: Path, data: object) -> None:
     )
 
 
-def plot_curves(y: np.ndarray, s: np.ndarray, points: dict[str, dict], out: Path) -> float:
-    """PR- і ROC-криві на validation; повертає ROC-AUC."""
+# --- п. 1: опис поділу ---
+
+
+def split_table(data: dict[str, np.ndarray]) -> str:
+    summary = split_summary(data)
+    return md_table(
+        ["Вибірка", "Об'єктів", "Шахрайських", "Частка шахрайських"],
+        [[r.split, r.n, r.positives, f"{r.positive_fraction:.6f}"] for r in summary.itertuples()],
+    )
+
+
+# --- п. 2: вибір порога на validation ---
+
+
+def select_threshold(data: dict[str, np.ndarray]) -> dict[str, object]:
+    """Таблиця кандидатів, t* і рядки порівняння 0.5 / t* / +inf на validation."""
+    y = data["validation_y"]
+    s = data["validation_scores"].astype(np.float64)
+    table = candidate_table(y, s)
+    t_star = best_threshold(table)
+    rules = {"Стандартний поріг": 0.5, "Мінімум вартості": t_star, "Усі негативні": math.inf}
+    rows = {name: confusion(y, s, t) for name, t in rules.items()}
+    # Таблиця кандидатів і прямий підрахунок мають давати ті самі числа для t* та +inf.
+    for name in ("Мінімум вартості", "Усі негативні"):
+        from_table = table[table["threshold"] == rules[name]].iloc[0].to_dict()
+        if any(from_table[k] != rows[name][k] for k in COLUMNS):
+            raise SystemExit(f"Розбіжність між таблицею кандидатів і прямим підрахунком: {name}")
+    return {"y": y, "s": s, "table": table, "t_star": t_star, "rows": rows}
+
+
+def validation_table(rows: dict[str, dict]) -> str:
+    return md_table(
+        ["Правило на validation", "Поріг", *COUNTERS],
+        [[name, row["threshold"], *(row[k] for k in COUNTERS)] for name, row in rows.items()],
+    )
+
+
+def curve_points(validation: dict[str, object]) -> dict[str, dict]:
+    rows = validation["rows"]
+    return {
+        "t = 0.5": rows["Стандартний поріг"],
+        f"t* = {fmt(validation['t_star'])}": rows["Мінімум вартості"],
+    }
+
+
+def plot_curves(y: np.ndarray, s: np.ndarray, points: dict[str, dict]) -> tuple[float, Figure, Figure]:
+    """PR- і ROC-криві на validation; повертає ROC-AUC та обидва рисунки."""
     auc = float(roc_auc_score(y, s))
     precision, recall, _ = precision_recall_curve(y, s)
     fpr, tpr, _ = roc_curve(y, s)
 
-    fig, ax = plt.subplots(figsize=(6, 5))
+    fig_pr, ax = plt.subplots(figsize=(6, 5))
     ax.plot(recall, precision, lw=1.5)
     for label, row in points.items():
         p = ratio(row["TP"], row["TP"] + row["FP"])
@@ -88,11 +133,9 @@ def plot_curves(y: np.ndarray, s: np.ndarray, points: dict[str, dict], out: Path
     ax.set(xlim=(0, 1.02), ylim=(0, 1.02))
     ax.grid(alpha=0.3)
     ax.legend(loc="lower left")
-    fig.tight_layout()
-    fig.savefig(out / "pr_curve_validation.png", dpi=150)
-    plt.close(fig)
+    fig_pr.tight_layout()
 
-    fig, ax = plt.subplots(figsize=(6, 5))
+    fig_roc, ax = plt.subplots(figsize=(6, 5))
     ax.plot(fpr, tpr, lw=1.5, label=f"ROC-AUC = {auc:.4f}")
     ax.plot([0, 1], [0, 1], ls="--", lw=1, color="gray")
     for label, row in points.items():
@@ -106,10 +149,11 @@ def plot_curves(y: np.ndarray, s: np.ndarray, points: dict[str, dict], out: Path
     ax.set(xlabel="FPR = FP / (FP + TN)", ylabel="TPR = recall", title="ROC-крива (validation)")
     ax.grid(alpha=0.3)
     ax.legend(loc="lower right")
-    fig.tight_layout()
-    fig.savefig(out / "roc_curve_validation.png", dpi=150)
-    plt.close(fig)
-    return auc
+    fig_roc.tight_layout()
+    return auc, fig_pr, fig_roc
+
+
+# --- п. 3: перевірка пошуку порога ---
 
 
 def run_verification() -> tuple[list[dict], bool]:
@@ -138,6 +182,95 @@ def run_verification() -> tuple[list[dict], bool]:
     return results, all(r["passed"] for r in results)
 
 
+def verification_table(check: dict) -> str:
+    rows = [
+        [slow["threshold"], *(slow[k] for k in COUNTERS), *(fast[k] for k in COUNTERS),
+         "так" if all(slow[k] == fast[k] for k in COLUMNS) else "НІ"]
+        for slow, fast in zip(check["brute_force"], check["cumulative"])
+    ]
+    return md_table(
+        ["Поріг", *(f"{k} перебір" for k in COUNTERS), *(f"{k} кум. суми" for k in COUNTERS), "Збіг"],
+        rows,
+    )
+
+
+def verification_verdict(check: dict) -> str:
+    return (
+        f"t* (перебір) = {fmt(check['t_star_brute_force'])}; "
+        f"t* (кумулятивні суми) = {fmt(check['t_star_cumulative'])}; "
+        f"перевірка {'пройдена' if check['passed'] else 'НЕ ПРОЙДЕНА: ' + '; '.join(check['problems'])}"
+    )
+
+
+# --- п. 4: тестова оцінка з уже зафіксованим t* ---
+
+
+def evaluate_test(data: dict[str, np.ndarray], t_star: float) -> dict[str, object]:
+    y = data["test_y"]
+    s = data["test_scores"].astype(np.float64)
+    te = confusion(y, s, t_star)
+    # Довідкові рядки для висновків; на вибір порога вони не впливають.
+    reference = {"0.5": confusion(y, s, 0.5), "+inf": confusion(y, s, math.inf)}
+
+    pred = s >= t_star
+    kind = np.where(pred & (y == 0), "FP", np.where(~pred & (y == 1), "FN", ""))
+    errors = pd.DataFrame(
+        {
+            "csv_row": data["test_row_ids"],
+            "type": kind,
+            "label": y,
+            "score": s,
+            "amount": data["test_amount"],
+            "s_minus_t": s - t_star,
+        }
+    )
+    errors = errors[errors["type"] != ""].sort_values("csv_row").reset_index(drop=True)
+    examples = pd.concat([errors[errors["type"] == k].head(N_EXAMPLES) for k in ("FP", "FN")])
+    return {
+        "t_star": t_star,
+        "confusion": te,
+        "precision": ratio(te["TP"], te["TP"] + te["FP"]),
+        "recall": ratio(te["TP"], te["TP"] + te["FN"]),
+        "reference": reference,
+        "errors": errors,
+        "examples": examples,
+    }
+
+
+def test_metrics_table(test: dict[str, object]) -> str:
+    te = test["confusion"]
+    return md_table(
+        ["Поріг", *COUNTERS, "precision", "recall"],
+        [[test["t_star"], *(te[k] for k in COUNTERS), test["precision"], test["recall"]]],
+    )
+
+
+def test_confusion_table(test: dict[str, object]) -> str:
+    te = test["confusion"]
+    return md_table(
+        ["", "Прогноз 1", "Прогноз 0"],
+        [["Мітка 1", f"TP = {te['TP']}", f"FN = {te['FN']}"], ["Мітка 0", f"FP = {te['FP']}", f"TN = {te['TN']}"]],
+    )
+
+
+def test_reference_table(test: dict[str, object]) -> str:
+    te, reference = test["confusion"], test["reference"]
+    return md_table(
+        ["Поріг на test", *COUNTERS],
+        [[0.5, *(reference["0.5"][k] for k in COUNTERS)],
+         [test["t_star"], *(te[k] for k in COUNTERS)],
+         [math.inf, *(reference["+inf"][k] for k in COUNTERS)]],
+    )
+
+
+def error_examples_table(examples: pd.DataFrame) -> str:
+    return md_table(
+        ["Рядок CSV (від 0, без заголовка)", "Тип помилки", "Мітка", "Оцінка s", "Amount", "s − t*"],
+        [[r.csv_row, r.type, r.label, r.score, f"{r.amount:.2f}", f"{r.s_minus_t:+.6g}"]
+         for r in examples.itertuples()],
+    )
+
+
 def error_summary(kind: str, errors: pd.DataFrame) -> list[object]:
     part = errors[errors["type"] == kind]
     if part.empty:
@@ -155,6 +288,14 @@ def error_summary(kind: str, errors: pd.DataFrame) -> list[object]:
     ]
 
 
+def error_summary_table(errors: pd.DataFrame) -> str:
+    return md_table(
+        ["Тип", "Кількість", "Amount: медіана", "Amount: середнє", "Amount: min – max",
+         "abs(s − t*): медіана", "abs(s − t*): min", "abs(s − t*): max"],
+        [error_summary(k, errors) for k in ("FP", "FN")],
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -162,42 +303,20 @@ def main() -> None:
     parser.add_argument("--saved", type=Path, default=Path("results"), help="Тека зі збереженими прогнозами")
     parser.add_argument("--out", type=Path, default=Path("analysis"), help="Тека для результатів аналізу")
     args = parser.parse_args()
+    matplotlib.use("Agg")
     out = args.out
     out.mkdir(parents=True, exist_ok=True)
     data = load_predictions(args.saved)
-    report: list[str] = []
+    report = ["## Поділ", split_table(data)]
 
-    # --- п. 1: опис поділу ---
-    summary = split_summary(data)
-    report += [
-        "## Поділ",
-        md_table(
-            ["Вибірка", "Об'єктів", "Шахрайських", "Частка шахрайських"],
-            [[r.split, r.n, r.positives, f"{r.positive_fraction:.6f}"] for r in summary.itertuples()],
-        ),
-    ]
-
-    # --- п. 2: вибір порога на validation ---
-    y_va = data["validation_y"]
-    s_va = data["validation_scores"].astype(np.float64)
-    table = candidate_table(y_va, s_va)
-    t_star = best_threshold(table)
+    validation = select_threshold(data)
+    table, t_star = validation["table"], validation["t_star"]
     table.to_csv(out / "candidates_validation.csv", index=False)
-
-    rules = {"Стандартний поріг": 0.5, "Мінімум вартості": t_star, "Усі негативні": math.inf}
-    va_rows = {name: confusion(y_va, s_va, t) for name, t in rules.items()}
-    # Таблиця кандидатів і прямий підрахунок мають давати ті самі числа для t* та +inf.
-    for name in ("Мінімум вартості", "Усі негативні"):
-        from_table = table[table["threshold"] == rules[name]].iloc[0].to_dict()
-        if any(from_table[k] != va_rows[name][k] for k in COLUMNS):
-            raise SystemExit(f"Розбіжність між таблицею кандидатів і прямим підрахунком: {name}")
-
-    auc = plot_curves(
-        y_va,
-        s_va,
-        {"t = 0.5": va_rows["Стандартний поріг"], f"t* = {fmt(t_star)}": va_rows["Мінімум вартості"]},
-        out,
-    )
+    auc, fig_pr, fig_roc = plot_curves(validation["y"], validation["s"], curve_points(validation))
+    fig_pr.savefig(out / "pr_curve_validation.png", dpi=150)
+    fig_roc.savefig(out / "roc_curve_validation.png", dpi=150)
+    plt.close(fig_pr)
+    plt.close(fig_roc)
     write_json(
         out / "threshold.json",
         {
@@ -206,106 +325,47 @@ def main() -> None:
             "selected_on": "validation",
             "rule": "s >= t; мінімум C = 10*FN + FP; за рівної вартості найбільший поріг",
             "candidates": len(table),
-            "validation": va_rows["Мінімум вартості"],
+            "validation": validation["rows"]["Мінімум вартості"],
         },
     )
     report += [
         "## Validation",
         f"ROC-AUC = {auc:.6f}; кандидатів: {len(table)}; t* = {t_star!r}",
-        md_table(
-            ["Правило на validation", "Поріг", *COUNTERS],
-            [[name, row["threshold"], *(row[k] for k in COUNTERS)] for name, row in va_rows.items()],
-        ),
+        validation_table(validation["rows"]),
     ]
 
-    # --- п. 3: перевірка пошуку; до test не переходимо, доки вона не пройдена ---
+    # До test не переходимо, доки перевірка не пройдена.
     checks, passed = run_verification()
     write_json(out / "verification.json", checks)
     report.append("## Перевірка пошуку порога")
     for check in checks:
-        rows = [
-            [slow["threshold"], *(slow[k] for k in COUNTERS), *(fast[k] for k in COUNTERS),
-             "так" if all(slow[k] == fast[k] for k in COLUMNS) else "НІ"]
-            for slow, fast in zip(check["brute_force"], check["cumulative"])
-        ]
-        report += [
-            f"### Набір {check['set']}",
-            md_table(
-                ["Поріг", *(f"{k} перебір" for k in COUNTERS), *(f"{k} кум. суми" for k in COUNTERS), "Збіг"],
-                rows,
-            ),
-            f"t* (перебір) = {fmt(check['t_star_brute_force'])}; "
-            f"t* (кумулятивні суми) = {fmt(check['t_star_cumulative'])}; "
-            f"перевірка {'пройдена' if check['passed'] else 'НЕ ПРОЙДЕНА: ' + '; '.join(check['problems'])}",
-        ]
+        report += [f"### Набір {check['set']}", verification_table(check), verification_verdict(check)]
     if not passed:
         (out / "report.md").write_text("\n\n".join(report) + "\n", encoding="utf-8")
         raise SystemExit("Перевірка пошуку порога не пройдена — тестова оцінка не виконується.")
 
-    # --- п. 4: тестова оцінка з уже зафіксованим t* ---
-    y_te = data["test_y"]
-    s_te = data["test_scores"].astype(np.float64)
-    te = confusion(y_te, s_te, t_star)
-    precision = ratio(te["TP"], te["TP"] + te["FP"])
-    recall = ratio(te["TP"], te["TP"] + te["FN"])
-    # Довідкові рядки для висновків; на вибір порога вони не впливають.
-    te_reference = {"0.5": confusion(y_te, s_te, 0.5), "+inf": confusion(y_te, s_te, math.inf)}
-
-    pred = s_te >= t_star
-    kind = np.where(pred & (y_te == 0), "FP", np.where(~pred & (y_te == 1), "FN", ""))
-    errors = pd.DataFrame(
-        {
-            "csv_row": data["test_row_ids"],
-            "type": kind,
-            "label": y_te,
-            "score": s_te,
-            "amount": data["test_amount"],
-            "s_minus_t": s_te - t_star,
-        }
-    )
-    errors = errors[errors["type"] != ""].sort_values("csv_row").reset_index(drop=True)
-    errors.to_csv(out / "test_errors.csv", index=False)
-    examples = pd.concat([errors[errors["type"] == k].head(N_EXAMPLES) for k in ("FP", "FN")])
-    examples.to_csv(out / "test_error_examples.csv", index=False)
-
+    test = evaluate_test(data, t_star)
+    test["errors"].to_csv(out / "test_errors.csv", index=False)
+    test["examples"].to_csv(out / "test_error_examples.csv", index=False)
     write_json(
         out / "test_evaluation.json",
         {
             "t_star": t_star,
-            "confusion": te,
-            "precision": precision,
-            "recall": recall,
-            "reference_not_used_for_selection": te_reference,
+            "confusion": test["confusion"],
+            "precision": test["precision"],
+            "recall": test["recall"],
+            "reference_not_used_for_selection": test["reference"],
         },
     )
     report += [
         "## Test",
-        md_table(
-            ["Поріг", *COUNTERS, "precision", "recall"],
-            [[t_star, *(te[k] for k in COUNTERS), precision, recall]],
-        ),
-        md_table(
-            ["", "Прогноз 1", "Прогноз 0"],
-            [["Мітка 1", f"TP = {te['TP']}", f"FN = {te['FN']}"], ["Мітка 0", f"FP = {te['FP']}", f"TN = {te['TN']}"]],
-        ),
+        test_metrics_table(test),
+        test_confusion_table(test),
         "Довідково (не використовується для вибору):",
-        md_table(
-            ["Поріг на test", *COUNTERS],
-            [[0.5, *(te_reference["0.5"][k] for k in COUNTERS)],
-             [t_star, *(te[k] for k in COUNTERS)],
-             [math.inf, *(te_reference["+inf"][k] for k in COUNTERS)]],
-        ),
+        test_reference_table(test),
         "## Приклади помилок на test",
-        md_table(
-            ["Рядок CSV (від 0, без заголовка)", "Тип помилки", "Мітка", "Оцінка s", "Amount", "s − t*"],
-            [[r.csv_row, r.type, r.label, r.score, f"{r.amount:.2f}", f"{r.s_minus_t:+.6g}"]
-             for r in examples.itertuples()],
-        ),
-        md_table(
-            ["Тип", "Кількість", "Amount: медіана", "Amount: середнє", "Amount: min – max",
-             "abs(s − t*): медіана", "abs(s − t*): min", "abs(s − t*): max"],
-            [error_summary(k, errors) for k in ("FP", "FN")],
-        ),
+        error_examples_table(test["examples"]),
+        error_summary_table(test["errors"]),
     ]
     (out / "report.md").write_text("\n\n".join(report) + "\n", encoding="utf-8")
     print("\n\n".join(report))
