@@ -1,0 +1,361 @@
+{
+  "device": "mps: Apple M1 Pro",
+  "split_csv_sha256": "148dad92de9a18670c177df9f8757aa6519fb0ea6d74a8ba723cfc4453f0a1bc",
+  "split": {
+    "control": {
+      "buildings": {
+        "train": [
+          200,
+          1996761
+        ],
+        "validation": [
+          218,
+          4837323
+        ],
+        "test": [
+          219,
+          4837559
+        ]
+      },
+      "forest": {
+        "train": [
+          200,
+          2032625
+        ],
+        "validation": [
+          237,
+          5276962
+        ],
+        "test": [
+          237,
+          5291326
+        ]
+      },
+      "glacier": {
+        "train": [
+          200,
+          2183923
+        ],
+        "validation": [
+          276,
+          6135652
+        ],
+        "test": [
+          277,
+          6157250
+        ]
+      },
+      "mountain": {
+        "train": [
+          200,
+          1950345
+        ],
+        "validation": [
+          262,
+          5789535
+        ],
+        "test": [
+          263,
+          5849765
+        ]
+      },
+      "sea": {
+        "train": [
+          200,
+          1987613
+        ],
+        "validation": [
+          255,
+          5655068
+        ],
+        "test": [
+          255,
+          5668011
+        ]
+      },
+      "street": {
+        "train": [
+          200,
+          1841817
+        ],
+        "validation": [
+          250,
+          5541845
+        ],
+        "test": [
+          251,
+          5547533
+        ]
+      }
+    },
+    "all_match": true,
+    "overlaps": {
+      "train∩validation": 0,
+      "train∩test": 0,
+      "validation∩test": 0
+    },
+    "unique_files": true,
+    "passed": true
+  },
+  "initial_loss": {
+    "scratch": {
+      "L0": 2.047884464263916,
+      "logit_std": 0.48824405670166016,
+      "logit_abs_max": 1.4828548431396484
+    },
+    "frozen": {
+      "L0": 1.9243943691253662,
+      "logit_std": 0.614327609539032,
+      "logit_abs_max": 1.7125465869903564
+    },
+    "ln6": 1.791759469228055
+  },
+  "params": {
+    "regimes": {
+      "scratch": {
+        "total": 11179590,
+        "trainable": 11179590,
+        "groups": [
+          {
+            "modules": [
+              "conv1",
+              "bn1",
+              "layer1",
+              "layer2",
+              "layer3",
+              "layer4",
+              "fc"
+            ],
+            "n_params": 11179590,
+            "lr": 0.003,
+            "weight_decay": 0.0001
+          }
+        ],
+        "requires_grad_false_in_optimizer": 0,
+        "trainable_missing_from_optimizer": 0,
+        "matches": true
+      },
+      "frozen": {
+        "total": 11179590,
+        "trainable": 3078,
+        "groups": [
+          {
+            "modules": [
+              "fc"
+            ],
+            "n_params": 3078,
+            "lr": 0.003,
+            "weight_decay": 0.0001
+          }
+        ],
+        "requires_grad_false_in_optimizer": 0,
+        "trainable_missing_from_optimizer": 0,
+        "matches": true
+      },
+      "unfreeze": {
+        "total": 11179590,
+        "trainable": 8396806,
+        "groups": [
+          {
+            "modules": [
+              "fc"
+            ],
+            "n_params": 3078,
+            "lr": 0.003,
+            "weight_decay": 0.0001
+          },
+          {
+            "modules": [
+              "layer4"
+            ],
+            "n_params": 8393728,
+            "lr": 0.0003,
+            "weight_decay": 0.0001
+          }
+        ],
+        "requires_grad_false_in_optimizer": 0,
+        "trainable_missing_from_optimizer": 0,
+        "matches": true
+      }
+    },
+    "passed": true
+  },
+  "changes": {
+    "regimes": {
+      "frozen": {
+        "modules": {
+          "conv1": {
+            "params_changed": false,
+            "has_bn": false,
+            "bn_changed": null,
+            "matches_expected": true
+          },
+          "bn1": {
+            "params_changed": false,
+            "has_bn": true,
+            "bn_changed": false,
+            "matches_expected": true
+          },
+          "layer1": {
+            "params_changed": false,
+            "has_bn": true,
+            "bn_changed": false,
+            "matches_expected": true
+          },
+          "layer2": {
+            "params_changed": false,
+            "has_bn": true,
+            "bn_changed": false,
+            "matches_expected": true
+          },
+          "layer3": {
+            "params_changed": false,
+            "has_bn": true,
+            "bn_changed": false,
+            "matches_expected": true
+          },
+          "layer4": {
+            "params_changed": false,
+            "has_bn": true,
+            "bn_changed": false,
+            "matches_expected": true
+          },
+          "fc": {
+            "params_changed": true,
+            "has_bn": false,
+            "bn_changed": null,
+            "matches_expected": true
+          }
+        },
+        "losses_5_steps": [
+          1.9243943691253662,
+          1.7650933265686035,
+          1.6138393878936768,
+          1.3872827291488647,
+          1.2887053489685059
+        ]
+      },
+      "unfreeze": {
+        "modules": {
+          "conv1": {
+            "params_changed": false,
+            "has_bn": false,
+            "bn_changed": null,
+            "matches_expected": true
+          },
+          "bn1": {
+            "params_changed": false,
+            "has_bn": true,
+            "bn_changed": false,
+            "matches_expected": true
+          },
+          "layer1": {
+            "params_changed": false,
+            "has_bn": true,
+            "bn_changed": false,
+            "matches_expected": true
+          },
+          "layer2": {
+            "params_changed": false,
+            "has_bn": true,
+            "bn_changed": false,
+            "matches_expected": true
+          },
+          "layer3": {
+            "params_changed": false,
+            "has_bn": true,
+            "bn_changed": false,
+            "matches_expected": true
+          },
+          "layer4": {
+            "params_changed": true,
+            "has_bn": true,
+            "bn_changed": true,
+            "matches_expected": true
+          },
+          "fc": {
+            "params_changed": true,
+            "has_bn": false,
+            "bn_changed": null,
+            "matches_expected": true
+          }
+        },
+        "losses_5_steps": [
+          1.8967177867889404,
+          1.341543436050415,
+          1.1650540828704834,
+          0.7262283563613892,
+          0.6561011075973511
+        ]
+      }
+    },
+    "passed": true
+  },
+  "bn_experiment": {
+    "prediction": "Прогноз (записано до запуску досліду). Якщо в режимі frozen замість set_train_mode викликати model.train(), то параметри замороженого кістяка (conv1, bn1, layer1–layer4) не зміняться: вони мають requires_grad=False, градієнтів не отримують і в оптимізатор не передані. Зміняться ковзні статистики BN (running_mean, running_var, num_batches_tracked) у bn1 і в усіх BN шарів layer1–layer4: у режимі train() BN на кожному прямому проході оновлює їх за статистиками пакета незалежно від requires_grad. У conv1 BN немає; fc змінить параметри, як і в правильному варіанті. З кривої втрати на train цього майже не видно: втрата далі спадає, бо в train() BN нормує за статистиками пакета, і голова бачить узгоджені ознаки. Помилка проявиться лише при оцінці в eval(): там використовуються ковзні статистики, які вже не ImageNet-івські й залежать від історії пакетів, тобто ознаки на validation/test відрізняються від тих, на яких навчалась голова, а «заморожений» кістяк насправді змінюється від запуску до запуску.",
+    "modules": {
+      "conv1": {
+        "params_changed": false,
+        "has_bn": false,
+        "bn_changed": null,
+        "matches_prediction": true
+      },
+      "bn1": {
+        "params_changed": false,
+        "has_bn": true,
+        "bn_changed": true,
+        "matches_prediction": true
+      },
+      "layer1": {
+        "params_changed": false,
+        "has_bn": true,
+        "bn_changed": true,
+        "matches_prediction": true
+      },
+      "layer2": {
+        "params_changed": false,
+        "has_bn": true,
+        "bn_changed": true,
+        "matches_prediction": true
+      },
+      "layer3": {
+        "params_changed": false,
+        "has_bn": true,
+        "bn_changed": true,
+        "matches_prediction": true
+      },
+      "layer4": {
+        "params_changed": false,
+        "has_bn": true,
+        "bn_changed": true,
+        "matches_prediction": true
+      },
+      "fc": {
+        "params_changed": true,
+        "has_bn": false,
+        "bn_changed": null,
+        "matches_prediction": true
+      }
+    },
+    "layer": "layer1.0.bn1",
+    "max_abs_delta_running_mean": 0.09283638000488281,
+    "max_abs_delta_running_var": 0.12031435966491699,
+    "correct_max_abs_delta_running_mean": 0.0,
+    "correct_max_abs_delta_running_var": 0.0,
+    "losses_correct": [
+      1.9243943691253662,
+      1.7650933265686035,
+      1.6138393878936768,
+      1.3872827291488647,
+      1.2887053489685059
+    ],
+    "losses_bug": [
+      1.8869601488113403,
+      1.9456455707550049,
+      1.844244122505188,
+      1.6837118864059448,
+      1.4074041843414307
+    ],
+    "matches_prediction": true
+  }
+}

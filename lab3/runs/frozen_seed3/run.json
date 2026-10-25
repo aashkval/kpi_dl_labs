@@ -1,0 +1,267 @@
+{
+  "run": "frozen_seed3",
+  "seed": 3,
+  "regime": "frozen",
+  "config": {
+    "seed": 3,
+    "regime": "frozen",
+    "dtype": "float32",
+    "transforms": {
+      "train": [
+        {
+          "name": "RandomResizedCrop",
+          "size": [
+            160,
+            160
+          ],
+          "interpolation": "<InterpolationMode.BILINEAR: 'bilinear'>",
+          "antialias": true,
+          "scale": [
+            0.7,
+            1.0
+          ],
+          "ratio": [
+            0.75,
+            1.3333333333333333
+          ]
+        },
+        {
+          "name": "RandomHorizontalFlip",
+          "p": 0.5
+        },
+        {
+          "name": "ToTensor"
+        },
+        {
+          "name": "Normalize",
+          "mean": [
+            0.485,
+            0.456,
+            0.406
+          ],
+          "std": [
+            0.229,
+            0.224,
+            0.225
+          ],
+          "inplace": false
+        }
+      ],
+      "validation_test": [
+        {
+          "name": "Resize",
+          "size": [
+            160,
+            160
+          ],
+          "max_size": null,
+          "interpolation": "<InterpolationMode.BILINEAR: 'bilinear'>",
+          "antialias": true
+        },
+        {
+          "name": "ToTensor"
+        },
+        {
+          "name": "Normalize",
+          "mean": [
+            0.485,
+            0.456,
+            0.406
+          ],
+          "std": [
+            0.229,
+            0.224,
+            0.225
+          ],
+          "inplace": false
+        }
+      ],
+      "mean": [
+        0.485,
+        0.456,
+        0.406
+      ],
+      "std": [
+        0.229,
+        0.224,
+        0.225
+      ],
+      "image_open": "PIL.Image.open(...).convert('RGB')",
+      "test_time_augmentation": false
+    },
+    "model": {
+      "arch": "torchvision.models.resnet18",
+      "weights": "ResNet18_Weights.IMAGENET1K_V1",
+      "fc": "torch.nn.Linear(512, 6), стандартна ініціалізація",
+      "trainable_modules": [
+        "fc"
+      ],
+      "eval_modules_during_training": [
+        "conv1",
+        "bn1",
+        "layer1",
+        "layer2",
+        "layer3",
+        "layer4"
+      ],
+      "params_total": 11179590,
+      "params_trainable": 3078,
+      "batchnorm": {
+        "momentum": 0.1,
+        "eps": 1e-05
+      },
+      "build_order": [
+        "torch.manual_seed(seed); np.random.seed(seed)",
+        "resnet18(weights=W)",
+        "fc = Linear(512, 6)",
+        "requires_grad",
+        "to(device); AdamW"
+      ]
+    },
+    "optimizer": {
+      "class": "torch.optim.AdamW",
+      "defaults": {
+        "lr": 0.001,
+        "betas": [
+          0.9,
+          0.999
+        ],
+        "eps": 1e-08,
+        "weight_decay": 0.0001,
+        "amsgrad": false,
+        "maximize": false,
+        "foreach": null,
+        "capturable": false,
+        "differentiable": false,
+        "fused": null,
+        "decoupled_weight_decay": true
+      },
+      "groups": [
+        {
+          "modules": [
+            "fc"
+          ],
+          "lr": 0.003,
+          "weight_decay": 0.0001,
+          "betas": [
+            0.9,
+            0.999
+          ],
+          "eps": 1e-08,
+          "amsgrad": false,
+          "n_params": 3078
+        }
+      ]
+    },
+    "loss": {
+      "class": "torch.nn.CrossEntropyLoss",
+      "reduction": "mean",
+      "label_smoothing": 0.0,
+      "weight": null
+    },
+    "loaders": {
+      "train": {
+        "batch_size": 32,
+        "shuffle": true,
+        "drop_last": false,
+        "num_workers": 0,
+        "generator": null,
+        "sampler": "default (RandomSampler з глобальним генератором PyTorch)"
+      },
+      "validation": {
+        "batch_size": 64,
+        "shuffle": false,
+        "num_workers": 0,
+        "order": "як у split.csv"
+      }
+    },
+    "epochs": 8,
+    "steps_per_epoch": 38,
+    "total_optimizer_steps": 304,
+    "last_batch_size": 16,
+    "epoch_loss": "sum_b L_b * |b| / 1200, L_b — втрата пакета до кроку оптимізатора",
+    "final_weights": "після 8-ї епохи (без вибору епохи за validation)",
+    "not_used": [
+      "lr scheduler",
+      "gradient clipping",
+      "mixed precision",
+      "label smoothing",
+      "class weights",
+      "early stopping",
+      "checkpoint selection by validation"
+    ]
+  },
+  "git": {
+    "commit": "580bd07b5d546a25a1757c1c0abe321170b40e9f",
+    "uncommitted_changes_in_lab3": false,
+    "code_sha256": {
+      "common.py": "3787f7b5e018f44952e898767ebe7d832d764b8dc80dd84120cc0d24a8d6ba79",
+      "train.py": "72d5609dd401093d39ae15ebe22d110ea0d709e38c6756ba0ca429285d7cec16"
+    }
+  },
+  "split_csv_sha256": "148dad92de9a18670c177df9f8757aa6519fb0ea6d74a8ba723cfc4453f0a1bc",
+  "versions": {
+    "python": "3.12.13",
+    "torch": "2.14.1",
+    "torchvision": "0.29.1",
+    "numpy": "2.5.4",
+    "platform": "macOS-26.7-arm64-arm-64bit"
+  },
+  "device": "mps: Apple M1 Pro",
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.6879748634497325,
+      "val_macro_f1": 0.8857886933783767
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.29120487968126935,
+      "val_macro_f1": 0.88902870989329
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.24735152825713158,
+      "val_macro_f1": 0.892482772255185
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.22488207191228868,
+      "val_macro_f1": 0.8725848159612039
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.20704054752985637,
+      "val_macro_f1": 0.8767280949099935
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.20660864889621736,
+      "val_macro_f1": 0.8765676282323169
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.17613741457462312,
+      "val_macro_f1": 0.8899791479492755
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.18958317716916404,
+      "val_macro_f1": 0.8885955696095422
+    }
+  ],
+  "final": {
+    "train_loss": 0.18958317716916404,
+    "val_macro_f1": 0.8885955696095422
+  },
+  "train_time_s": 14.719970415999342,
+  "train_plus_validation_time_s": 31.731953958000304,
+  "val_logits": {
+    "file": "val_logits.npy",
+    "shape": [
+      1498,
+      6
+    ]
+  },
+  "weights_digest": "84ef31dc3cbf9dbc443d76e2380fa28d78396d906593c05aeb3f57388b96a819"
+}

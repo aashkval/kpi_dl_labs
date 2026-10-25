@@ -1,0 +1,11 @@
+{
+  "means": {
+    "scratch": 0.46748434550943047,
+    "frozen": 0.8837657141829945,
+    "unfreeze": 0.8865642868313351
+  },
+  "regime": "unfreeze",
+  "seed": 3,
+  "run": "unfreeze_seed3",
+  "val_macro_f1": 0.9050268521067166
+}
