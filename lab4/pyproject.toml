@@ -1,0 +1,14 @@
+[project]
+name = "lab4-int8"
+version = "1.0.0"
+description = "ЛР4: FP32 проти INT8 (Швидкий О., КМ-31)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy==2.5.4",
+    "onnx==1.23.2",
+    "onnxruntime==1.29.0",
+    "pillow==13.0.0",
+    "scikit-learn==1.9.1",
+    "torch==2.14.1",
+    "torchvision==0.29.1",
+]
